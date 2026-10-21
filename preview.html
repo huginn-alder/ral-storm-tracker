@@ -143,6 +143,13 @@ summary{font-size:12px;color:#888;cursor:pointer}
   </div>
 
   <details id="logbox" open><summary>Cast log</summary><ul id="log"></ul></details>
+  <details id="fairbox"><summary>Is the coin fair? (run the test)</summary>
+    <div style="font-size:12px;color:#bbb;line-height:1.45;padding:6px 4px">
+      Each flip uses <b>crypto.getRandomValues</b>, the browser's cryptographic random generator (the same source used for encryption keys), not Math.random. It draws a random 32-bit number and takes its last bit: odd wins, even loses. The code is public at github.com/huginn-alder/ral-storm-tracker.<br>
+      This button flips 10,000 coins with the exact function the Ral button uses. A fair coin lands between <b>4,900 and 5,100 wins</b> about 95% of the time. Run it as many times as they like.
+      <div style="margin-top:6px"><button id="bFair" style="padding:8px 12px;font-size:14px">Flip 10,000</button> <span id="fairOut"></span></div>
+    </div>
+  </details>
 </div>
 
 <script id="logic">
@@ -293,6 +300,8 @@ function undo(hist){ return hist.length ? hist.pop() : null; }
     if((d=b.getAttribute('data-cast'))){ buzz(25); apply(cast(state,d,coinWin)); if(state.lastFlip && state.lastFlip.result==='lose' && state.log[0].indexOf('LOSE')>-1) buzz([60,40,60]); return; }
     if((d=b.getAttribute('data-ral'))){ apply(setRal(state,d)); return; }
   });
+  $('bFair').onclick = function(){ var w=0; for(var i=0;i<10000;i++){ if(coinWin()) w++; } var ok = (w>=4900 && w<=5100);
+    $('fairOut').innerHTML = '<b>'+w.toLocaleString()+'</b> wins, '+(10000-w).toLocaleString()+' losses ('+(w/100).toFixed(1)+'%) '+(ok?'<span style="color:#7c7">inside the fair range</span>':'<span style="color:#fc6">outside 4,900-5,100 (happens about 1 run in 20 even with a fair coin; run it again)</span>'); };
   $('bManual').onclick = function(){ buzz(15); apply(manualFlip(state,coinWin)); };
   $('bTransform').onclick = function(){ apply(transformRal(state)); };
   $('bKeep').onclick = function(){ apply(keepRal(state)); };

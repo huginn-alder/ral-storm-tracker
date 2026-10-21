@@ -1,6 +1,6 @@
 // Offline cache: after the first visit the tracker opens with no connection.
 // Bump VERSION when index.html changes so phones pick up the new page.
-const VERSION = "storm-v2";
+const VERSION = "storm-v3";
 const FILES = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
