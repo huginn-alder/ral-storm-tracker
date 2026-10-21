@@ -45,7 +45,7 @@ button:active{transform:scale(.94);filter:brightness(1.6)}
 
 /* cast */
 .cast button{flex:1;height:64px;font-size:17px;font-weight:800;letter-spacing:.02em}
-#bInst{background:#1d4f8f}
+#bInst{background:linear-gradient(90deg,#1d4f8f,#a8321f);flex:2}
 #bSorc{background:#a8321f}
 #bOther{background:#444}
 .counts{display:flex;gap:6px;font-size:12px;color:#aaa;justify-content:center}
@@ -113,11 +113,10 @@ summary{font-size:12px;color:#888;cursor:pointer}
   </div>
 
   <div class="row cast">
-    <button id="bInst" data-cast="instant">Instant</button>
-    <button id="bSorc" data-cast="sorcery">Sorcery</button>
+    <button id="bInst" data-cast="instant">Instant / Sorcery</button>
     <button id="bOther" data-cast="other">Other spell</button>
   </div>
-  <div class="counts"><span>Ral instants <b id="c-inst">0</b></span><span>sorceries <b id="c-sorc">0</b></span><span>total <b id="c-tot">0</b></span></div>
+  <div class="counts"><span>Ral spells (instant + sorcery) <b id="c-tot">0</b></span></div>
 
   <div id="flip">No flips yet</div>
   <div id="winBtns"><button id="bTransform">Transform Ral</button><button id="bKeep" class="keep">Keep him</button></div>
@@ -163,7 +162,7 @@ function cast(state,type,rand){
   s.pendingWin = false;
   s.storm += 1;
   var name = 'Other spell';
-  if(type==='instant'){ s.inst++; name='Instant'; }
+  if(type==='instant'){ s.inst++; name='Inst/Sorc'; }
   else if(type==='sorcery'){ s.sorc++; name='Sorcery'; }
   if(s.birgiOut) s.birgi++;
   var res = '';
@@ -251,8 +250,6 @@ function undo(hist){ return hist.length ? hist.pop() : null; }
     POOLS.forEach(function(p){ $('n-'+p).textContent = state[p]; });
     $('total').textContent = state.red+state.blue+state.white+state.birgi;
     $('n-storm').textContent = state.storm;
-    $('c-inst').textContent = state.inst;
-    $('c-sorc').textContent = state.sorc;
     $('c-tot').textContent = state.inst+state.sorc;
     $('n-dmg').textContent = state.ralDmg;
     $('n-life').textContent = state.life;
