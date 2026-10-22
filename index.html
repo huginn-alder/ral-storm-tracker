@@ -63,11 +63,15 @@ button:active{transform:scale(.94);filter:brightness(1.6)}
 #winBtns.show{display:flex}
 #winBtns button{flex:1;height:44px;font-weight:700;background:#1f6a35}
 #winBtns button.keep{background:#3a3a3a}
-.dmg{display:flex;align-items:center;gap:6px;background:#1b1b1b;border-radius:12px;padding:4px 8px;font-size:13px;color:#ccc}
-.dmg .n{font-size:22px;font-weight:800;color:#ff8a80;min-width:26px;text-align:center}
-.dmg button{width:38px;height:34px;font-size:20px;font-weight:700}
-.dmg .sp{flex:1}
-.dmg .flipbtn{height:34px;padding:0 12px;font-size:13px;font-weight:700;background:#33334a}
+.dmg{display:flex;align-items:center;gap:4px;background:#1b1b1b;border-radius:12px;padding:4px 6px;font-size:13px;color:#ccc}
+.dmg .lf{min-width:58px;text-align:center;line-height:1}
+.dmg .lt{line-height:1;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#999}
+.dmg .lt i{font-style:normal;font-size:9px;font-weight:600;letter-spacing:0;text-transform:none;color:#777;margin-left:3px}
+.dmg .n{font-size:24px;line-height:1;font-weight:900;color:#ff8a80;font-variant-numeric:tabular-nums}
+.dmg button{height:34px;font-weight:700}
+.dmg .lb{flex:1;font-size:12px;padding:0 2px;background:#3a2222}
+.dmg .pm{width:34px;font-size:20px}
+.dmg .flipbtn{padding:0 8px;font-size:12px;background:#33334a}
 
 /* toggles */
 .seg{display:flex;background:#1b1b1b;border-radius:12px;padding:3px;gap:3px}
@@ -116,7 +120,7 @@ summary{font-size:12px;color:#888;cursor:pointer}
 
   <div id="flip">No flips yet</div>
   <div id="winBtns"><button id="bTransform">Transform Ral</button><button id="bKeep" class="keep">Keep him</button></div>
-  <div class="dmg">Ral damage to me <span class="n" id="n-dmg">0</span><button data-dmg="-1">&minus;</button><span class="sp"></span><button class="flipbtn" id="bManual">Flip coin</button></div>
+  <div class="dmg"><div class="lf"><div class="lt">Life <i>Ral: <span id="n-dmg">0</span></i></div><div class="n" id="n-life">20</div></div><button class="lb" data-life="-1">&minus;1 fetch</button><button class="lb" data-life="-2">&minus;2 shock</button><button class="pm" data-life="1" aria-label="Life plus one">+</button><button class="pm" data-life="-1" data-manual="1" aria-label="Life minus one">&minus;</button><button class="flipbtn" id="bManual">Flip coin</button></div>
 
   <div class="seg" id="ralSeg">
     <button data-ral="mage">Ral: Monsoon Mage</button>
@@ -152,7 +156,7 @@ summary{font-size:12px;color:#888;cursor:pointer}
 // ---- pure logic (no DOM) ----
 var POOLS = ['red','blue','white','birgi'];
 function freshState(){
-  return {red:0,blue:0,white:0,birgi:0,storm:0,inst:0,sorc:0,ralDmg:0,
+  return {red:0,blue:0,white:0,birgi:0,storm:0,inst:0,sorc:0,ralDmg:0,life:20,
     ral:'mage',birgiOut:false,myTurn:true,
     lastFlip:null,pendingWin:false,log:[]};
 }
@@ -172,8 +176,8 @@ function cast(state,type,rand){
   if((type==='instant'||type==='sorcery') && ralActive(s)){
     var win = rand();
     s.lastFlip = {result: win?'win':'lose', id: Date.now()+Math.random(), manual:false};
-    if(win){ s.pendingWin = true; } else { s.ralDmg++; }
-    res = ', flip '+(win?'WIN':'LOSE');
+    if(win){ s.pendingWin = true; } else { s.ralDmg++; s.life--; }
+    res = ', flip '+(win?'WIN':'LOSE')+(win?'':', life '+s.life);
   } else if((type==='instant'||type==='sorcery') && s.ral==='mage' && !s.myTurn){
     res = ', no flip (not my turn)';
   }
@@ -196,6 +200,11 @@ function adjustStorm(state,d){
 }
 function adjustDmg(state,d){
   var s = clone(state); s.ralDmg = Math.max(0, s.ralDmg+d); return s;
+}
+function adjustLife(state,d,why){
+  var s = clone(state); s.life += d;
+  if(why) addLog(s, why+': life '+s.life);
+  return s;
 }
 function setRal(state,v){
   var s = clone(state); s.ral = v; s.pendingWin = false; addLog(s,'Ral: '+v); return s;
@@ -233,7 +242,7 @@ function undo(hist){ return hist.length ? hist.pop() : null; }
   var state = freshState(), hist = [];
   try{
     var saved = JSON.parse(localStorage.getItem(KEY)||'null');
-    if(saved && saved.state){ state = Object.assign(freshState(), saved.state); hist = saved.hist||[]; }
+    if(saved && saved.state){ state = Object.assign(freshState(), saved.state); if(typeof state.life!=='number') state.life = 20; hist = saved.hist||[]; }
   }catch(e){}
 
   var $ = function(id){ return document.getElementById(id); };
@@ -250,6 +259,7 @@ function undo(hist){ return hist.length ? hist.pop() : null; }
     $('n-storm').textContent = state.storm;
     $('c-tot').textContent = state.inst+state.sorc;
     $('n-dmg').textContent = state.ralDmg;
+    $('n-life').textContent = state.life;
 
     var f = $('flip'), lf = state.lastFlip;
     if(!lf){ f.className=''; f.textContent='No flips yet'; }
@@ -286,7 +296,7 @@ function undo(hist){ return hist.length ? hist.pop() : null; }
     var d;
     if((d=b.getAttribute('data-pool'))){ apply(adjustPool(state,d,+b.getAttribute('data-d'))); return; }
     if((d=b.getAttribute('data-storm'))){ apply(adjustStorm(state,+d)); return; }
-    if((d=b.getAttribute('data-dmg'))){ apply(adjustDmg(state,+d)); return; }
+    if((d=b.getAttribute('data-life'))){ d=+d; apply(adjustLife(state,d, b.getAttribute('data-manual')||b.classList.contains('pm') ? '' : (d===-1?'Fetch':'Shock'))); return; }
     if((d=b.getAttribute('data-cast'))){ buzz(25); apply(cast(state,d,coinWin)); if(state.lastFlip && state.lastFlip.result==='lose' && state.log[0].indexOf('LOSE')>-1) buzz([60,40,60]); return; }
     if((d=b.getAttribute('data-ral'))){ apply(setRal(state,d)); return; }
   });
@@ -302,7 +312,7 @@ function undo(hist){ return hist.length ? hist.pop() : null; }
   $('bNew').onclick = function(){ if(confirm('Start a new game? This resets everything.')) apply(newGame()); };
   $('bUndo').onclick = function(){
     var prev = undo(hist);
-    if(prev){ state = prev; lastShownFlipId = state.lastFlip ? state.lastFlip.id : null; render(); save(); }
+    if(prev){ state = prev; if(typeof state.life!=='number') state.life = 20; lastShownFlipId = state.lastFlip ? state.lastFlip.id : null; render(); save(); }
   };
 
   render();
